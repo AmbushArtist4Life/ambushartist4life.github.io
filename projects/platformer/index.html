@@ -1,20 +1,108 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>platformer</title>
-    <link href="platformer.css" rel="stylesheet" />
-    <script src="https://code.jquery.com/jquery-3.1.0.js"></script>
-    <script src="setup.js"></script>
-    <script src="helpers.js"></script>
-    <script src="platformer.js"></script>
-  </head>
 
-  <body id="body">
-    <canvas id="canvas" width="1400" height="750"></canvas>
-    <img id="cannon" src="images/cannon.png" />
-    <img id="player" src="images/halle.png" />
-    <img id="projectile" src="images/projectile.png" />
-    <img src="https://upload.wikimedia.org/wikipedia/commons/b/bd/Test.svg" />
-  </body>
-</html>
+
+
+
+import pygame
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Constants
+WIDTH, HEIGHT = 800, 600
+PLAYER_SIZE = 50
+ENEMY_SIZE = 50
+
+# Colors
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+
+# Create the window
+win = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Shooting Game")
+
+# Player
+player_img = pygame.image.load('spaceship.png')  # Replace 'spaceship.png' with your player image
+player_img = pygame.transform.scale(player_img, (PLAYER_SIZE, PLAYER_SIZE))
+playerX = WIDTH // 2 - PLAYER_SIZE // 2
+playerY = HEIGHT - PLAYER_SIZE - 10
+player_speed = 7
+
+# Enemy
+enemy_img = pygame.image.load('enemy.png')  # Replace 'enemy.png' with your enemy image
+enemy_img = pygame.transform.scale(enemy_img, (ENEMY_SIZE, ENEMY_SIZE))
+enemyX = random.randint(0, WIDTH - ENEMY_SIZE)
+enemyY = random.randint(50, 150)
+enemy_speed = 5
+
+# Bullet
+bullet_img = pygame.image.load('bullet.png')  # Replace 'bullet.png' with your bullet image
+bullet_img = pygame.transform.scale(bullet_img, (10, 30))
+bulletX = 0
+bulletY = playerY
+bullet_speed = 10
+bullet_state = "ready"  # ready - ready to fire, fire - bullet is moving
+
+def player(x, y):
+    win.blit(player_img, (x, y))
+
+def enemy(x, y):
+    win.blit(enemy_img, (x, y))
+
+def fire_bullet(x, y):
+    global bullet_state
+    bullet_state = "fire"
+    win.blit(bullet_img, (x + PLAYER_SIZE // 2 - 5, y))
+
+def is_collision(enemyX, enemyY, bulletX, bulletY):
+    distance = ((enemyX - bulletX) ** 2 + (enemyY - bulletY) ** 2) ** 0.5
+    if distance < 27:
+        return True
+    return False
+
+# Game loop
+running = True
+while running:
+    win.fill(WHITE)
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE and bullet_state == "ready":
+                bulletX = playerX
+                fire_bullet(bulletX, bulletY)
+
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT] and playerX > 0:
+        playerX -= player_speed
+    if keys[pygame.K_RIGHT] and playerX < WIDTH - PLAYER_SIZE:
+        playerX += player_speed
+
+    if bullet_state == "fire":
+        fire_bullet(bulletX, bulletY)
+        bulletY -= bullet_speed
+        if bulletY <= 0:
+            bullet_state = "ready"
+            bulletY = playerY
+
+    enemyX += enemy_speed
+    if enemyX >= WIDTH - ENEMY_SIZE or enemyX <= 0:
+        enemy_speed *= -1
+        enemyY += 40
+
+    collision = is_collision(enemyX, enemyY, bulletX, bulletY)
+    if collision:
+        bullet_state = "ready"
+        bulletY = playerY
+        enemyX = random.randint(0, WIDTH - ENEMY_SIZE)
+        enemyY = random.randint(50, 150)
+
+    player(playerX, playerY)
+    enemy(enemyX, enemyY)
+    
+    pygame.display.update()
+
+pygame.quit()
